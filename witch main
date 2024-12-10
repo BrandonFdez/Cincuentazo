@@ -1,0 +1,17 @@
+[33m995d63d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbafr[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/bafr[m[33m, [m[1;32mmain[m[33m)[m HEAD@{0}: checkout: moving from main to bafr
+[33m995d63d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbafr[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/bafr[m[33m, [m[1;32mmain[m[33m)[m HEAD@{1}: reset: moving to bafr
+[33m1bc10bd[m HEAD@{2}: checkout: moving from main to main
+[33m1bc10bd[m HEAD@{3}: reset: moving to HEAD
+[33m1bc10bd[m HEAD@{4}: checkout: moving from bafr to main
+[33m995d63d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbafr[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/bafr[m[33m, [m[1;32mmain[m[33m)[m HEAD@{5}: checkout: moving from main to bafr
+[33m1bc10bd[m HEAD@{6}: commit: FUNCIONALIDAD CONSOLA
+[33mfe332ed[m HEAD@{7}: pull origin main --rebase (finish): returning to refs/heads/main
+[33mfe332ed[m HEAD@{8}: pull origin main --rebase (pick): Hola
+[33m0a35cc7[m HEAD@{9}: pull origin main --rebase (pick): Genesis
+[33mf5a6d8c[m HEAD@{10}: pull origin main --rebase (pick): Genesis
+[33mb660386[m HEAD@{11}: pull origin main --rebase (start): checkout b660386c09ff7b5bc3a0de63c697d16db7f22bac
+[33m5941d0f[m HEAD@{12}: commit: Hola
+[33m6703f21[m HEAD@{13}: reset: moving to HEAD
+[33m6703f21[m HEAD@{14}: commit: Genesis
+[33m995d63d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbafr[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/bafr[m[33m, [m[1;32mmain[m[33m)[m HEAD@{15}: Branch: renamed refs/heads/master to refs/heads/main
+[33m995d63d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbafr[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/bafr[m[33m, [m[1;32mmain[m[33m)[m HEAD@{17}: commit (initial): Genesis
