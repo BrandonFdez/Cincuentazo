@@ -2,6 +2,7 @@ package com.example.cincuentazo.model;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
+import javafx.application.Platform;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -106,8 +107,11 @@ public class CZ implements ICZ {
             barajarMazo();
             cartasEnMesa.clear();
             cartasEnMesa.add(ultimaCarta);
+
+            mostrarAlerta("Mazo Reciclado", "Se han reciclado las cartas del montón para continuar el juego.", Alert.AlertType.INFORMATION);
         }
     }
+
 
     @Override
     public boolean puedeJugarCarta(Carta carta, int sumaActual) {
@@ -127,25 +131,33 @@ public class CZ implements ICZ {
 
     @Override
     public void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipo) {
-        Alert alert = new Alert(tipo);
-        alert.setTitle(titulo);
-        alert.setHeaderText(mensaje);
-        alert.showAndWait();
+        Platform.runLater(() -> {
+            Alert alert = new Alert(tipo);
+            alert.setTitle(titulo);
+            alert.setHeaderText(mensaje);
+            alert.showAndWait();
+        });
     }
 
     @Override
     public void DefeatAlert() {
-        mostrarAlerta("Derrota", "¡Oh no! Has perdido.", Alert.AlertType.INFORMATION);
+        Platform.runLater(() -> {
+            mostrarAlerta("Derrota", "¡Oh no! Has perdido.", Alert.AlertType.INFORMATION);
+        });
     }
 
     @Override
     public void ErrorAlert() {
-        mostrarAlerta("Error", "Acción inválida.", Alert.AlertType.ERROR);
+        Platform.runLater(() -> {
+            mostrarAlerta("Error", "Acción inválida.", Alert.AlertType.ERROR);
+        });
     }
 
     @Override
     public void WinAlert() {
-        mostrarAlerta("Victoria", "¡Felicidades! Has ganado.", Alert.AlertType.INFORMATION);
+        Platform.runLater(() -> {
+            mostrarAlerta("Victoria", "¡Felicidades! Has ganado.", Alert.AlertType.INFORMATION);
+        });
     }
 
     @Override
@@ -171,5 +183,11 @@ public class CZ implements ICZ {
         alert.getDialogPane().setContent(textArea);
         textArea.setPrefSize(400, 400);
         alert.showAndWait();
+    }
+
+    // Método para mostrar cartas disponibles
+    @Override
+    public int mostrarCartasDisponibles() {
+        return mazo.size();
     }
 }
