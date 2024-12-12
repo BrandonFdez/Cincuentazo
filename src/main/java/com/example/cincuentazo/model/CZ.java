@@ -174,7 +174,7 @@ public class CZ implements ICZ {
                   - 2-8 y 10 suman su valor.
                   - 9 no suma ni resta.
                   - J, Q, K restan 10.
-                  - A suma 1 o 11 según convenga.
+                  - A suma 1 o 10 según convenga.
                 • Turnos: Juega una carta o pasa si no puedes.
                 • Ganador: El último jugador en pie gana.
                 """);
