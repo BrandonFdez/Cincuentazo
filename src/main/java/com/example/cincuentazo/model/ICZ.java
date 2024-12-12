@@ -32,4 +32,7 @@ public interface ICZ {
     void WinAlert();
 
     void ShowInstructions();
+
+    // Método para mostrar cartas disponibles
+    int mostrarCartasDisponibles();
 }

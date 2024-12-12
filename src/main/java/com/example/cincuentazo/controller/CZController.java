@@ -1,6 +1,7 @@
 package com.example.cincuentazo.controller;
 
 import com.example.cincuentazo.model.CZ;
+import javafx.scene.control.Alert;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,7 @@ public class CZController {
 
         System.out.println("Juego iniciado con " + cantidadJugadores + " jugadores.");
         System.out.println("Carta inicial en la mesa: " + cartaInicial);
+        System.out.println("Cartas disponibles en el mazo: " + modelo.mostrarCartasDisponibles());
         mostrarManos();
 
         jugar();
@@ -71,6 +73,7 @@ public class CZController {
             if (jugadorActual == 0) {
                 // Turno del jugador humano
                 System.out.println("\nTu turno. Suma actual en la mesa: " + sumaMesa);
+                System.out.println("Cartas disponibles en el mazo: " + modelo.mostrarCartasDisponibles());
                 System.out.println("Tu mano: " + manosJugadores.get(0));
                 System.out.print("Selecciona el índice de la carta que deseas jugar (0-" + (manosJugadores.get(0).size() - 1) + "): ");
 
@@ -90,19 +93,39 @@ public class CZController {
         }
     }
 
+    /**
+     * Verifica si el jugador tiene movimientos válidos en su mano.
+     * @param jugador Índice del jugador en la lista de manos.
+     * @return true si el jugador puede jugar al menos una carta válida; false en caso contrario.
+     */
+    private boolean tieneMovimientosValidos(int jugador) {
+        for (CZ.Carta carta : manosJugadores.get(jugador)) {
+            if (modelo.puedeJugarCarta(carta, sumaMesa)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void turnoJugador(int jugador, int indiceCarta) {
+        // Verificar si el jugador tiene movimientos válidos ANTES de cualquier acción
+        if (!tieneMovimientosValidos(jugador)) {
+            System.out.println("Jugador " + (jugador + 1) + " no tiene movimientos válidos. Eliminado.");
+            modelo.DefeatAlert();
+            manosJugadores.remove(jugador); // Eliminar al jugador
+            verificarFinDelJuego(); // Verificar si el juego ha terminado
+            return; // Finalizar turno sin jugar
+        }
+
+        // Validar índices del jugador y carta
         if (jugador >= manosJugadores.size() || indiceCarta >= manosJugadores.get(jugador).size()) {
-            System.out.println("Acción inválida. Verifica tu jugada.");
+            modelo.ErrorAlert();
             return;
         }
 
         CZ.Carta cartaJugada = manosJugadores.get(jugador).get(indiceCarta);
 
-        if (!modelo.puedeJugarCarta(cartaJugada, sumaMesa)) {
-            System.out.println("No puedes jugar esta carta. Superarías 50.");
-            return;
-        }
-
+        // Jugar la carta directamente y calcular la nueva suma
         manosJugadores.get(jugador).remove(indiceCarta);
         cartasEnMesa.add(cartaJugada);
         sumaMesa += modelo.calcularPuntosCarta(cartaJugada, sumaMesa);
@@ -110,26 +133,56 @@ public class CZController {
         System.out.println("Jugador " + (jugador + 1) + " jugó: " + cartaJugada);
         System.out.println("Suma actual en la mesa: " + sumaMesa);
 
+        // Verificar si el jugador pierde al exceder 50
         if (sumaMesa > 50) {
-            System.out.println("Jugador " + (jugador + 1) + " eliminado. Suma excedió 50.");
-            manosJugadores.remove(jugador);
-        } else {
-            modelo.tomarCarta(jugador);
-            System.out.println("Nueva mano del jugador " + (jugador + 1) + ": " + manosJugadores.get(jugador));
+            System.out.println("Jugador " + (jugador + 1) + " perdió. Suma excedió 50.");
+            modelo.DefeatAlert();
+            manosJugadores.remove(jugador); // Eliminar al jugador
+            verificarFinDelJuego();
+            return; // Finalizar turno si el jugador pierde
         }
+
+        // Robar carta del mazo si sigue en el juego
+        modelo.tomarCarta(jugador);
+        System.out.println("Nueva mano del jugador " + (jugador + 1) + ": " + manosJugadores.get(jugador));
 
         verificarFinDelJuego();
     }
 
     private void verificarFinDelJuego() {
+        // Si solo queda un jugador, declarar ganador
         if (manosJugadores.size() == 1) {
-            System.out.println("¡El jugador " + (manosJugadores.size()) + " es el ganador!");
-            System.exit(0); // Fin del juego
+            int jugadorGanador = manosJugadores.get(0).equals(manosJugadores.get(0)) ? 2 : 1; // Si solo queda un jugador, el otro es el ganador
+            System.out.println("¡El jugador " + jugadorGanador + " es el ganador!");
+            modelo.WinAlert();
+            System.exit(0); // Finalizar el juego
+        }
+
+        // Si el mazo está vacío, intentar reciclar cartas del montón
+        if (modelo.mostrarCartasDisponibles() == 0) {
+            System.out.println("El mazo está vacío. Intentando reciclar cartas...");
+            modelo.reciclarCartas(cartasEnMesa);
+
+            // Si no es posible reciclar, declarar empate
+            if (modelo.mostrarCartasDisponibles() == 0) {
+                System.out.println("No hay más cartas para jugar. ¡Empate!");
+                modelo.mostrarAlerta("Juego Finalizado", "No hay más cartas para jugar. ¡Empate!", Alert.AlertType.INFORMATION);
+                System.exit(0); // Finalizar el juego
+            }
         }
     }
 
+
     public void turnoIA(int jugador) {
         if (jugador >= manosJugadores.size()) {
+            return;
+        }
+
+        // Verificar movimientos válidos ANTES de intentar jugar
+        if (!tieneMovimientosValidos(jugador)) {
+            System.out.println("Jugador " + (jugador + 1) + " no tiene movimientos válidos. Eliminado.");
+            manosJugadores.remove(jugador);
+            verificarFinDelJuego(); // Esto declarará al otro jugador como ganador
             return;
         }
 
@@ -141,7 +194,6 @@ public class CZController {
                 return;
             }
         }
-
-        System.out.println("Jugador " + (jugador + 1) + " no pudo jugar una carta válida.");
     }
+
 }
