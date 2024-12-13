@@ -20,21 +20,32 @@ public class CZ implements ICZ {
             this.puntos = puntos;
         }
 
-        public String getPalo() {
-            return palo;
+        public String getPalo() { return palo; }
+        public String getValor() { return valor; }
+        public int getPuntos() { return puntos; }
+
+        @Override
+        public String toString() { return valor + " de " + palo + " (" + puntos + " puntos)"; }
+    }
+
+    public static class Jugador {
+        private final String nombre;
+        private final String tipo;
+        private final List<Carta> mano;
+
+        public Jugador(String nombre, String tipo, List<Carta> mano) {
+            this.nombre = nombre;
+            this.tipo = tipo;
+            this.mano = mano;
         }
 
-        public String getValor() {
-            return valor;
-        }
-
-        public int getPuntos() {
-            return puntos;
-        }
+        public String getNombre() { return nombre; }
+        public List<Carta> getMano() { return mano; }
+        public boolean esHumano() { return "Humano".equals(tipo); }
 
         @Override
         public String toString() {
-            return valor + " de " + palo + " (" + puntos + " puntos)";
+            return esHumano() ? nombre + " (Tú): " + mano + "\n" : nombre + " (IA): ***\n";
         }
     }
 
@@ -85,15 +96,15 @@ public class CZ implements ICZ {
 
     @Override
     public Carta tomarCartaDelMazo() {
-        if (!mazo.isEmpty()) {
-            return mazo.remove(0);
-        }
-        return null;
+        return !mazo.isEmpty() ? mazo.remove(0) : null;
     }
 
     @Override
     public void tomarCarta(int jugador) {
-        if (!mazo.isEmpty() && jugador >= 0 && jugador < manosJugadores.size()) {
+        if (!mazo.isEmpty() &&
+                jugador >= 0 &&
+                jugador < manosJugadores.size() &&
+                manosJugadores.get(jugador).size() < 4) {
             Carta nuevaCarta = mazo.remove(0);
             manosJugadores.get(jugador).add(nuevaCarta);
         }
@@ -107,11 +118,20 @@ public class CZ implements ICZ {
             barajarMazo();
             cartasEnMesa.clear();
             cartasEnMesa.add(ultimaCarta);
-
             mostrarAlerta("Mazo Reciclado", "Se han reciclado las cartas del montón para continuar el juego.", Alert.AlertType.INFORMATION);
         }
     }
 
+    @Override
+    public void eliminarJugador(int jugadorIndex, List<Carta> cartasEnMesa) {
+        if (jugadorIndex >= 0 && jugadorIndex < manosJugadores.size()) {
+            List<Carta> cartasEliminadas = manosJugadores.get(jugadorIndex);
+            manosJugadores.remove(jugadorIndex);
+            mazo.addAll(cartasEliminadas);
+            barajarMazo();
+            mostrarAlerta("Jugador Eliminado", "Las cartas del jugador eliminado han sido recicladas.", Alert.AlertType.INFORMATION);
+        }
+    }
 
     @Override
     public boolean puedeJugarCarta(Carta carta, int sumaActual) {
@@ -123,10 +143,7 @@ public class CZ implements ICZ {
 
     @Override
     public int calcularPuntosCarta(Carta carta, int sumaActual) {
-        if ("A".equals(carta.getValor())) {
-            return (sumaActual + 11 <= 50) ? 11 : 1;
-        }
-        return carta.getPuntos();
+        return "A".equals(carta.getValor()) ? (sumaActual + 11 <= 50 ? 11 : 1) : carta.getPuntos();
     }
 
     @Override
@@ -141,23 +158,17 @@ public class CZ implements ICZ {
 
     @Override
     public void DefeatAlert() {
-        Platform.runLater(() -> {
-            mostrarAlerta("Derrota", "¡Oh no! Has perdido.", Alert.AlertType.INFORMATION);
-        });
+        mostrarAlerta("Derrota", "¡Oh no! Has perdido.", Alert.AlertType.INFORMATION);
     }
 
     @Override
     public void ErrorAlert() {
-        Platform.runLater(() -> {
-            mostrarAlerta("Error", "Acción inválida.", Alert.AlertType.ERROR);
-        });
+        mostrarAlerta("Error", "Acción inválida.", Alert.AlertType.ERROR);
     }
 
     @Override
     public void WinAlert() {
-        Platform.runLater(() -> {
-            mostrarAlerta("Victoria", "¡Felicidades! Has ganado.", Alert.AlertType.INFORMATION);
-        });
+        mostrarAlerta("Victoria", "¡Felicidades! Has ganado.", Alert.AlertType.INFORMATION);
     }
 
     @Override
@@ -165,19 +176,11 @@ public class CZ implements ICZ {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Instrucciones");
         alert.setHeaderText("Instrucciones del juego");
-
-        TextArea textArea = new TextArea();
-        textArea.setText("""
-                Regla principal: La suma de las cartas en la mesa no debe exceder 50.
-                • Cada jugador recibe 4 cartas iniciales.
-                • Cartas:
-                  - 2-8 y 10 suman su valor.
-                  - 9 no suma ni resta.
-                  - J, Q, K restan 10.
-                  - A suma 1 o 11 según convenga.
-                • Turnos: Juega una carta o pasa si no puedes.
-                • Ganador: El último jugador en pie gana.
-                """);
+        TextArea textArea = new TextArea("Regla principal: La suma de las cartas en la mesa no debe exceder 50.\n" +
+                "• Cada jugador recibe 4 cartas iniciales.\n" +
+                "• Cartas: 2-8 y 10 suman su valor. 9 no suma ni resta. J, Q, K restan 10. A suma 1 o 10 según convenga.\n" +
+                "• Turnos: Juega una carta o pasa si no puedes.\n" +
+                "• Ganador: El último jugador en pie gana.");
         textArea.setWrapText(true);
         textArea.setEditable(false);
         alert.getDialogPane().setContent(textArea);
@@ -185,7 +188,12 @@ public class CZ implements ICZ {
         alert.showAndWait();
     }
 
-    // Método para mostrar cartas disponibles
+    @Override
+    public void DevolverCartasAlMazo(List<Carta> cartas) {
+        mazo.addAll(cartas);
+        barajarMazo();
+    }
+
     @Override
     public int mostrarCartasDisponibles() {
         return mazo.size();
