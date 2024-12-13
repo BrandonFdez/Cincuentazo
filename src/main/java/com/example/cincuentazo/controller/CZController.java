@@ -14,6 +14,7 @@ public class CZController {
     private List<CZ.Carta> cartasEnMesa;
     private int sumaMesa;
     private int cantidadJugadores;
+    private int jugadorActual;
 
     public CZController() {
         this.modelo = new CZ();
@@ -52,23 +53,12 @@ public class CZController {
         }
     }
 
-    private void mostrarManos() {
-        for (int i = 0; i < manosJugadores.size(); i++) {
-            System.out.println("Mano del jugador " + (i + 1) + ": " + manosJugadores.get(i));
-        }
-    }
-
-    private void jugar() {
+    public void jugar() {
         Scanner scanner = new Scanner(System.in);
         int turno = 0;
 
-        while (true) {
-            int jugadorActual = turno % cantidadJugadores;
-
-            if (manosJugadores.size() <= jugadorActual) {
-                turno++;
-                continue;
-            }
+        while (manosJugadores.size() > 1) { // El juego continúa mientras haya más de un jugador
+            jugadorActual = turno % manosJugadores.size(); // Actualiza el turno de manera correcta
 
             if (jugadorActual == 0) {
                 // Turno del jugador humano
@@ -85,13 +75,35 @@ public class CZController {
                 }
             } else {
                 // Turno de la IA
-                System.out.println("\nTurno del jugador " + (jugadorActual + 1));
+                System.out.println("\n===============================");
+                System.out.println("Turno del jugador " + (jugadorActual + 1));
+                System.out.println("===============================\n");
                 turnoIA(jugadorActual);
             }
 
             turno++;
         }
+
+        // Fin del juego, solo queda un jugador
+        System.out.println("¡El jugador " + (jugadorActual + 1) + " es el ganador!");
+        modelo.WinAlert();
+        System.exit(0); // Finalizar el juego
     }
+
+    public int pedirValorAs() {
+        Scanner scanner = new Scanner(System.in);
+        int valorAs;
+        System.out.print("El As vale 1 o 10 puntos? Elige (1/10): ");
+
+        valorAs = scanner.nextInt();
+        while (valorAs != 1 && valorAs != 10) {
+            System.out.print("Opción inválida. Elige 1 o 10: ");
+            valorAs = scanner.nextInt();
+        }
+
+        return valorAs;
+    }
+
 
     /**
      * Verifica si el jugador tiene movimientos válidos en su mano.
@@ -108,7 +120,6 @@ public class CZController {
     }
 
     public void turnoJugador(int jugador, int indiceCarta) {
-        // Verificar si el jugador tiene movimientos válidos ANTES de cualquier acción
         if (!tieneMovimientosValidos(jugador)) {
             System.out.println("Jugador " + (jugador + 1) + " no tiene movimientos válidos. Eliminado.");
             modelo.DefeatAlert();
@@ -125,6 +136,12 @@ public class CZController {
 
         CZ.Carta cartaJugada = manosJugadores.get(jugador).get(indiceCarta);
 
+        // Verificar si la carta jugada es un As
+        if ("A".equals(cartaJugada.getValor())) {
+            int valorAs = pedirValorAs(); // Pedir al jugador el valor del As
+            cartaJugada = new CZ.Carta(cartaJugada.getPalo(), "A", valorAs); // Actualizar el valor de la carta "A"
+        }
+
         // Jugar la carta directamente y calcular la nueva suma
         manosJugadores.get(jugador).remove(indiceCarta);
         cartasEnMesa.add(cartaJugada);
@@ -133,7 +150,6 @@ public class CZController {
         System.out.println("Jugador " + (jugador + 1) + " jugó: " + cartaJugada);
         System.out.println("Suma actual en la mesa: " + sumaMesa);
 
-        // Verificar si el jugador pierde al exceder 50
         if (sumaMesa > 50) {
             System.out.println("Jugador " + (jugador + 1) + " perdió. Suma excedió 50.");
             modelo.DefeatAlert();
@@ -142,15 +158,27 @@ public class CZController {
             return; // Finalizar turno si el jugador pierde
         }
 
-        // Robar carta del mazo si sigue en el juego
         modelo.tomarCarta(jugador);
-        System.out.println("Nueva mano del jugador " + (jugador + 1) + ": " + manosJugadores.get(jugador));
-
+        mostrarManos();
         verificarFinDelJuego();
     }
 
+    private void mostrarManos() {
+        for (int i = 0; i < manosJugadores.size(); i++) {
+            // Mostrar las cartas del jugador actual (jugador humano o IA)
+            if (i == 0) { // Jugador 1 (humano)
+                System.out.println("Mano del jugador " + (i + 1) + ": " + manosJugadores.get(i));
+            } else { // Jugadores IA
+                System.out.print("Mano del jugador " + (i + 1) + ": ");
+                for (int j = 0; j < manosJugadores.get(i).size(); j++) {
+                    System.out.print("*** "); // Mostrar cartas ocultas para IA
+                }
+                System.out.println();
+            }
+        }
+    }
+
     private void verificarFinDelJuego() {
-        // Si solo queda un jugador, declarar ganador
         if (manosJugadores.size() == 1) {
             int jugadorGanador = manosJugadores.get(0).equals(manosJugadores.get(0)) ? 2 : 1; // Si solo queda un jugador, el otro es el ganador
             System.out.println("¡El jugador " + jugadorGanador + " es el ganador!");
@@ -158,26 +186,22 @@ public class CZController {
             System.exit(0); // Finalizar el juego
         }
 
-        // Si el mazo está vacío, intentar reciclar cartas del montón
         if (modelo.mostrarCartasDisponibles() == 0) {
             System.out.println("El mazo está vacío. Intentando reciclar cartas...");
             modelo.reciclarCartas(cartasEnMesa);
 
-            // Si no es posible reciclar, declarar empate
             if (modelo.mostrarCartasDisponibles() == 0) {
                 System.out.println("No hay más cartas para jugar. ¡Empate!");
                 modelo.mostrarAlerta("Juego Finalizado", "No hay más cartas para jugar. ¡Empate!", Alert.AlertType.INFORMATION);
-                System.exit(0); // Finalizar el juego
+                System.exit(0);
             }
         }
     }
-
 
     public void turnoIA(int jugador) {
         if (jugador >= manosJugadores.size()) {
             return;
         }
-
         // Verificar movimientos válidos ANTES de intentar jugar
         if (!tieneMovimientosValidos(jugador)) {
             System.out.println("Jugador " + (jugador + 1) + " no tiene movimientos válidos. Eliminado.");
@@ -185,15 +209,14 @@ public class CZController {
             verificarFinDelJuego(); // Esto declarará al otro jugador como ganador
             return;
         }
-
         List<CZ.Carta> mano = manosJugadores.get(jugador);
         for (int i = 0; i < mano.size(); i++) {
             CZ.Carta carta = mano.get(i);
             if (modelo.puedeJugarCarta(carta, sumaMesa)) {
+                // Realizar la jugada de la IA sin mostrar sus cartas
                 turnoJugador(jugador, i);
                 return;
             }
         }
     }
-
 }
