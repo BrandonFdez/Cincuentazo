@@ -1,8 +1,10 @@
 package com.example.cincuentazo.controller;
 
 import com.example.cincuentazo.model.CZ;
-import javafx.scene.control.Alert;
+import com.example.cincuentazo.exception.JuegoTerminadoException;
+import com.example.cincuentazo.exception.JugadorEliminadoException;
 
+import javafx.scene.control.Alert;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -65,6 +67,12 @@ public class CZController {
 
         while (jugadoresActivos.size() > 1) { // El juego continúa mientras haya más de un jugador
             jugadorActual = jugadoresActivos.get(turno % jugadoresActivos.size()); // Jugador actual
+
+            // Verificar si el jugador actual está activo
+            if (jugadorActual >= manosJugadores.size() || !jugadoresActivos.contains(jugadorActual)) {
+                turno++; // Si el jugador ya no está activo, pasamos al siguiente turno
+                continue;
+            }
 
             if (jugadorActual == 0) {
                 // Turno del jugador humano
@@ -129,6 +137,9 @@ public class CZController {
 
         CZ.Carta cartaJugada = manosJugadores.get(jugador).get(indiceCarta);
 
+        // Opción para tomar una carta del mazo antes de jugar una carta
+        preguntarSiTomarCarta(jugador);
+
         // Si la carta es un As, pedir el valor solo si es el turno del jugador humano
         if ("A".equals(cartaJugada.getValor())) {
             if (jugador == 0) { // Solo pedir al jugador humano (jugador 0)
@@ -162,6 +173,22 @@ public class CZController {
         verificarFinDelJuego(); // Verificar si queda un solo jugador
     }
 
+    private void preguntarSiTomarCarta(int jugador) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("¿Deseas tomar una carta del mazo? (Sí/No): ");
+        String respuesta = scanner.nextLine().trim().toLowerCase();
+
+        if (respuesta.equals("sí") || respuesta.equals("si")) {
+            CZ.Carta nuevaCarta = modelo.tomarCartaDelMazo();
+            if (nuevaCarta != null) {
+                manosJugadores.get(jugador).add(nuevaCarta);
+                System.out.println("Has tomado: " + nuevaCarta);
+            } else {
+                System.out.println("No hay cartas disponibles en el mazo.");
+            }
+        }
+    }
+
     private void mostrarManos() {
         for (int i = 0; i < manosJugadores.size(); i++) {
             // Mostrar las cartas del jugador actual (jugador humano o IA)
@@ -176,7 +203,6 @@ public class CZController {
             }
         }
     }
-
 
     private void verificarFinDelJuego() {
         if (jugadoresActivos.size() == 1) {
@@ -206,7 +232,17 @@ public class CZController {
 
     private void eliminarJugador(int jugador) {
         System.out.println("Jugador " + (jugador + 1) + " eliminado.");
-        manosJugadores.remove(jugador);
+        manosJugadores.remove(jugador);  // Eliminar las cartas del jugador
+
+        // Eliminar de la lista de jugadores activos
+        jugadoresActivos.remove(Integer.valueOf(jugador));
+
+        // Actualizar las manos después de eliminar al jugador
+        for (int i = jugador; i < manosJugadores.size(); i++) {
+            // Desplazar a los jugadores hacia la izquierda en la lista de manos
+            List<CZ.Carta> mano = manosJugadores.get(i);
+            manosJugadores.set(i, mano);
+        }
     }
 
     public void turnoIA(int jugador) {
