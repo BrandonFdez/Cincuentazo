@@ -143,7 +143,7 @@ public class CZ implements ICZ {
 
     @Override
     public int calcularPuntosCarta(Carta carta, int sumaActual) {
-        return "A".equals(carta.getValor()) ? (sumaActual + 11 <= 50 ? 11 : 1) : carta.getPuntos();
+        return "A".equals(carta.getValor()) ? (sumaActual + 10 <= 50 ? 10 : 1) : carta.getPuntos();
     }
 
     @Override
@@ -176,30 +176,30 @@ public class CZ implements ICZ {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Instrucciones");
         alert.setHeaderText("Instrucciones del juego");
-        TextArea textArea = new TextArea("Regla principal: La suma de las cartas en la mesa no debe exceder 50.\n" +
-                "• Cada jugador recibe 4 cartas iniciales.\n" +
-                "• Cartas: 2-8 y 10 suman su valor. 9 no suma ni resta. J, Q, K restan 10. A suma 1 o 10 según convenga.\n" +
-                "• Turnos: Juega una carta o pasa si no puedes.\n" +
-                "• Ganador: El último jugador en pie gana.");
 
-        TextArea textArea = new TextArea();
-        textArea.setText("""
-                Regla principal: La suma de las cartas en la mesa no debe exceder 50.
-                • Cada jugador recibe 4 cartas iniciales.
-                • Cartas:
-                  - 2-8 y 10 suman su valor.
-                  - 9 no suma ni resta.
-                  - J, Q, K restan 10.
-                  - A suma 1 o 10 según convenga.
-                • Turnos: Juega una carta o pasa si no puedes.
-                • Ganador: El último jugador en pie gana.
-                """);
+        // Elimina esta línea que ya crea un TextArea
+        // TextArea textArea = new TextArea("Regla principal...");
+
+        // Mantén solo la segunda inicialización
+        TextArea textArea = new TextArea("""
+            Regla principal: La suma de las cartas en la mesa no debe exceder 50.
+            • Cada jugador recibe 4 cartas iniciales.
+            • Cartas:
+              - 2-8 y 10 suman su valor.
+              - 9 no suma ni resta.
+              - J, Q, K restan 10.
+              - A suma 1 o 10 según convenga.
+            • Turnos: Juega una carta o pasa si no puedes.
+            • Ganador: El último jugador en pie gana.
+            """);
+
         textArea.setWrapText(true);
         textArea.setEditable(false);
         alert.getDialogPane().setContent(textArea);
         textArea.setPrefSize(400, 400);
         alert.showAndWait();
     }
+
 
     @Override
     public void DevolverCartasAlMazo(List<Carta> cartas) {

@@ -25,4 +25,3 @@ public interface ICZ {
     // Método que debes agregar
     void eliminarJugador(int jugadorIndex, List<CZ.Carta> cartasEnMesa);
 }
-}
