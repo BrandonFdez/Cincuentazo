@@ -104,7 +104,6 @@ public class CZController {
         return valorAs;
     }
 
-
     /**
      * Verifica si el jugador tiene movimientos válidos en su mano.
      * @param jugador Índice del jugador en la lista de manos.
@@ -136,10 +135,16 @@ public class CZController {
 
         CZ.Carta cartaJugada = manosJugadores.get(jugador).get(indiceCarta);
 
-        // Verificar si la carta jugada es un As
+        // Si es el turno de la IA y la carta es un As, la IA decide el valor automáticamente
         if ("A".equals(cartaJugada.getValor())) {
-            int valorAs = pedirValorAs(); // Pedir al jugador el valor del As
-            cartaJugada = new CZ.Carta(cartaJugada.getPalo(), "A", valorAs); // Actualizar el valor de la carta "A"
+            if (jugador != 0) {  // Si no es el jugador humano (jugador != 0), la IA toma la decisión
+                int valorAs = seleccionarValorAsIA(sumaMesa, manosJugadores.get(jugador).size()); // IA decide
+                cartaJugada = new CZ.Carta(cartaJugada.getPalo(), "A", valorAs); // Actualizar el valor de la carta "A"
+            } else {
+                // Si es el jugador humano, seguir pidiendo el valor
+                int valorAs = pedirValorAs(); // Pedir al jugador el valor del As
+                cartaJugada = new CZ.Carta(cartaJugada.getPalo(), "A", valorAs); // Actualizar el valor de la carta "A"
+            }
         }
 
         // Jugar la carta directamente y calcular la nueva suma
@@ -202,6 +207,7 @@ public class CZController {
         if (jugador >= manosJugadores.size()) {
             return;
         }
+
         // Verificar movimientos válidos ANTES de intentar jugar
         if (!tieneMovimientosValidos(jugador)) {
             System.out.println("Jugador " + (jugador + 1) + " no tiene movimientos válidos. Eliminado.");
@@ -209,13 +215,43 @@ public class CZController {
             verificarFinDelJuego(); // Esto declarará al otro jugador como ganador
             return;
         }
+
         List<CZ.Carta> mano = manosJugadores.get(jugador);
         for (int i = 0; i < mano.size(); i++) {
             CZ.Carta carta = mano.get(i);
             if (modelo.puedeJugarCarta(carta, sumaMesa)) {
+                // Si la carta es un As, la IA decide el valor automáticamente
+                if ("A".equals(carta.getValor())) {
+                    // Decidir el valor del As según la lógica de la IA
+                    int puntosAs = seleccionarValorAsIA(sumaMesa, mano.size());
+                    // Reemplazar la carta directamente con el valor elegido
+                    mano.set(i, new CZ.Carta(carta.getPalo(), carta.getValor(), puntosAs));
+                }
+
                 // Realizar la jugada de la IA sin mostrar sus cartas
                 turnoJugador(jugador, i);
                 return;
+            }
+        }
+    }
+
+    // Método que permite a la IA seleccionar el valor de un As (1 o 10) de manera más inteligente
+    private int seleccionarValorAsIA(int sumaActual, int cantidadCartasMano) {
+        // Si la IA tiene pocas cartas, puede arriesgar más, eligiendo 10 si no excede 50
+        if (cantidadCartasMano > 2) {
+            if (sumaActual + 10 <= 50) {
+                return 10; // Seleccionar 10 si no se pasa de 50
+            } else {
+                return 1; // Si se va a pasar, elegir 1
+            }
+        } else {
+            // Si la IA tiene pocas cartas, puede arriesgarse más.
+            // Elige 10 si es probable que gane o no se pase
+            if (sumaActual + 10 <= 50) {
+                return 10;
+            } else {
+                // Si tiene pocas cartas y la suma es alta, preferirá un 1
+                return 1;
             }
         }
     }
