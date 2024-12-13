@@ -177,9 +177,6 @@ public class CZ implements ICZ {
         alert.setTitle("Instrucciones");
         alert.setHeaderText("Instrucciones del juego");
 
-        // Elimina esta línea que ya crea un TextArea
-        // TextArea textArea = new TextArea("Regla principal...");
-
         // Mantén solo la segunda inicialización
         TextArea textArea = new TextArea("""
             Regla principal: La suma de las cartas en la mesa no debe exceder 50.
