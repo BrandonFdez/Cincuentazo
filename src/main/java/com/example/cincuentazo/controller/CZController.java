@@ -15,6 +15,7 @@ public class CZController {
     private int sumaMesa;
     private int cantidadJugadores;
     private int jugadorActual;
+    private List<Integer> jugadoresActivos;
 
     public CZController() {
         this.modelo = new CZ();
@@ -29,6 +30,11 @@ public class CZController {
         CZ.Carta cartaInicial = modelo.tomarCartaDelMazo();
         cartasEnMesa.add(cartaInicial);
         sumaMesa = cartaInicial.getPuntos();
+
+        jugadoresActivos = new ArrayList<>();
+        for (int i = 0; i < cantidadJugadores; i++) {
+            jugadoresActivos.add(i); // Agregar cada jugador a la lista de jugadores activos
+        }
 
         System.out.println("Juego iniciado con " + cantidadJugadores + " jugadores.");
         System.out.println("Carta inicial en la mesa: " + cartaInicial);
@@ -84,10 +90,12 @@ public class CZController {
             turno++;
         }
 
-        // Fin del juego, solo queda un jugador
-        System.out.println("¡El jugador " + (jugadorActual + 1) + " es el ganador!");
-        modelo.WinAlert();
-        System.exit(0); // Finalizar el juego
+        // El ciclo solo saldrá si queda un jugador, entonces se muestra el ganador
+        if (manosJugadores.size() == 1) {
+            System.out.println("¡El jugador " + (manosJugadores.get(0).equals(manosJugadores.get(0)) ? 1 : 2) + " es el ganador!");
+            modelo.WinAlert();
+            System.exit(0); // Finalizar el juego
+        }
     }
 
     public int pedirValorAs() {
@@ -103,7 +111,6 @@ public class CZController {
 
         return valorAs;
     }
-
 
     /**
      * Verifica si el jugador tiene movimientos válidos en su mano.
@@ -123,23 +130,23 @@ public class CZController {
         if (!tieneMovimientosValidos(jugador)) {
             System.out.println("Jugador " + (jugador + 1) + " no tiene movimientos válidos. Eliminado.");
             modelo.DefeatAlert();
-            manosJugadores.remove(jugador); // Eliminar al jugador
-            verificarFinDelJuego(); // Verificar si el juego ha terminado
+            jugadoresActivos.remove(Integer.valueOf(jugador)); // Eliminar al jugador de la lista activa
+            verificarFinDelJuego(); // Verificar si queda un solo jugador
             return; // Finalizar turno sin jugar
-        }
-
-        // Validar índices del jugador y carta
-        if (jugador >= manosJugadores.size() || indiceCarta >= manosJugadores.get(jugador).size()) {
-            modelo.ErrorAlert();
-            return;
         }
 
         CZ.Carta cartaJugada = manosJugadores.get(jugador).get(indiceCarta);
 
-        // Verificar si la carta jugada es un As
+        // Si la carta es un As, pedir el valor solo si es el turno del jugador humano
         if ("A".equals(cartaJugada.getValor())) {
-            int valorAs = pedirValorAs(); // Pedir al jugador el valor del As
-            cartaJugada = new CZ.Carta(cartaJugada.getPalo(), "A", valorAs); // Actualizar el valor de la carta "A"
+            if (jugador == 0) { // Solo pedir al jugador humano (jugador 0)
+                int valorAs = pedirValorAs(); // Pedir el valor del As al jugador
+                cartaJugada = new CZ.Carta(cartaJugada.getPalo(), "A", valorAs); // Actualizar el valor de la carta "A"
+            } else {
+                // Lógica para la IA (selección automática del valor del As)
+                int valorAs = seleccionarValorAsIA(sumaMesa, manosJugadores.get(jugador).size());
+                cartaJugada = new CZ.Carta(cartaJugada.getPalo(), "A", valorAs); // Actualizar el valor de la carta "A"
+            }
         }
 
         // Jugar la carta directamente y calcular la nueva suma
@@ -153,14 +160,14 @@ public class CZController {
         if (sumaMesa > 50) {
             System.out.println("Jugador " + (jugador + 1) + " perdió. Suma excedió 50.");
             modelo.DefeatAlert();
-            manosJugadores.remove(jugador); // Eliminar al jugador
-            verificarFinDelJuego();
+            jugadoresActivos.remove(Integer.valueOf(jugador)); // Eliminar al jugador de la lista activa
+            verificarFinDelJuego(); // Verificar si queda un solo jugador
             return; // Finalizar turno si el jugador pierde
         }
 
         modelo.tomarCarta(jugador);
         mostrarManos();
-        verificarFinDelJuego();
+        verificarFinDelJuego(); // Verificar si queda un solo jugador
     }
 
     private void mostrarManos() {
@@ -179,13 +186,15 @@ public class CZController {
     }
 
     private void verificarFinDelJuego() {
-        if (manosJugadores.size() == 1) {
-            int jugadorGanador = manosJugadores.get(0).equals(manosJugadores.get(0)) ? 2 : 1; // Si solo queda un jugador, el otro es el ganador
-            System.out.println("¡El jugador " + jugadorGanador + " es el ganador!");
+        // Si solo queda un jugador, termina el juego y anuncia al ganador
+        if (jugadoresActivos.size() == 1) {
+            int ganador = jugadoresActivos.get(0); // El único jugador restante es el ganador
+            System.out.println("¡El jugador " + (ganador + 1) + " es el ganador!");
             modelo.WinAlert();
             System.exit(0); // Finalizar el juego
         }
 
+        // Si no hay más cartas disponibles, reciclamos cartas
         if (modelo.mostrarCartasDisponibles() == 0) {
             System.out.println("El mazo está vacío. Intentando reciclar cartas...");
             modelo.reciclarCartas(cartasEnMesa);
@@ -198,10 +207,12 @@ public class CZController {
         }
     }
 
+
     public void turnoIA(int jugador) {
         if (jugador >= manosJugadores.size()) {
             return;
         }
+
         // Verificar movimientos válidos ANTES de intentar jugar
         if (!tieneMovimientosValidos(jugador)) {
             System.out.println("Jugador " + (jugador + 1) + " no tiene movimientos válidos. Eliminado.");
@@ -209,13 +220,43 @@ public class CZController {
             verificarFinDelJuego(); // Esto declarará al otro jugador como ganador
             return;
         }
+
         List<CZ.Carta> mano = manosJugadores.get(jugador);
         for (int i = 0; i < mano.size(); i++) {
             CZ.Carta carta = mano.get(i);
             if (modelo.puedeJugarCarta(carta, sumaMesa)) {
+                // Si la carta es un As, la IA decide el valor automáticamente
+                if ("A".equals(carta.getValor())) {
+                    // Decidir el valor del As según la lógica de la IA
+                    int puntosAs = seleccionarValorAsIA(sumaMesa, mano.size());
+                    // Reemplazar la carta directamente con el valor elegido
+                    mano.set(i, new CZ.Carta(carta.getPalo(), carta.getValor(), puntosAs));
+                }
+
                 // Realizar la jugada de la IA sin mostrar sus cartas
                 turnoJugador(jugador, i);
                 return;
+            }
+        }
+    }
+
+    // Método que permite a la IA seleccionar el valor de un As (1 o 10) de manera más inteligente
+    private int seleccionarValorAsIA(int sumaActual, int cantidadCartasMano) {
+        // Si la IA tiene pocas cartas, puede arriesgar más, eligiendo 10 si no excede 50
+        if (cantidadCartasMano > 2) {
+            if (sumaActual + 10 <= 50) {
+                return 10; // Seleccionar 10 si no se pasa de 50
+            } else {
+                return 1; // Si se va a pasar, elegir 1
+            }
+        } else {
+            // Si la IA tiene pocas cartas, puede arriesgarse más.
+            // Elige 10 si es probable que gane o no se pase
+            if (sumaActual + 10 <= 50) {
+                return 10;
+            } else {
+                // Si tiene pocas cartas y la suma es alta, preferirá un 1
+                return 1;
             }
         }
     }
