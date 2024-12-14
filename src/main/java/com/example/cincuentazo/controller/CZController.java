@@ -3,6 +3,7 @@ package com.example.cincuentazo.controller;
 import com.example.cincuentazo.model.CZ;
 import com.example.cincuentazo.exception.JuegoTerminadoException;
 import com.example.cincuentazo.exception.JugadorEliminadoException;
+import java.util.concurrent.*;
 
 import javafx.scene.control.Alert;
 import java.util.ArrayList;
@@ -61,9 +62,62 @@ public class CZController {
         }
     }
 
+    public class JugadorHumanoThread extends Thread {
+        private CZController controller;
+
+        public JugadorHumanoThread(CZController controller) {
+            this.controller = controller;
+        }
+
+        @Override
+        public void run() {
+            // Esta lógica maneja el turno del jugador humano
+            controller.turnoJugadorHumano();
+        }
+    }
+
+    public void turnoJugadorHumano() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Selecciona el índice de la carta que deseas jugar: ");
+
+        // Esperar a que el jugador ingrese un índice válido
+        while (true) {
+            try {
+                int indiceCarta = Integer.parseInt(scanner.nextLine());
+                if (indiceCarta >= 0 && indiceCarta < manosJugadores.get(0).size()) {
+                    turnoJugador(0, indiceCarta); // Llamar al método turnoJugador para realizar la jugada
+                    break; // Salir del bucle una vez que la jugada sea válida
+                } else {
+                    System.out.println("Índice inválido. Intenta nuevamente.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida. Intenta nuevamente.");
+            }
+        }
+    }
+
+    public class JugadorIAThread extends Thread {
+        private CZController controller;
+        private int jugador;
+
+        public JugadorIAThread(CZController controller, int jugador) {
+            this.controller = controller;
+            this.jugador = jugador;
+        }
+
+        @Override
+        public void run() {
+            // Esta lógica maneja el turno de la IA completamente dentro del hilo
+            controller.turnoIA(jugador); // Se asume que `turnoIA` maneja todo el flujo del turno del jugador IA
+        }
+    }
+
     public void jugar() {
         Scanner scanner = new Scanner(System.in);
         int turno = 0;
+
+        // ExecutorService para manejar los hilos de los jugadores
+        ExecutorService executor = Executors.newFixedThreadPool(2);
 
         while (jugadoresActivos.size() > 1) { // El juego continúa mientras haya más de un jugador
             jugadorActual = jugadoresActivos.get(turno % jugadoresActivos.size()); // Jugador actual
@@ -74,28 +128,45 @@ public class CZController {
                 continue;
             }
 
+            // Usamos un CountDownLatch para sincronizar la espera entre los hilos
+            CountDownLatch latch = new CountDownLatch(1); // Se usa para esperar a que ambos hilos terminen su ejecución
+
             if (jugadorActual == 0) {
                 // Turno del jugador humano
                 System.out.println("\nTu turno. Suma actual en la mesa: " + sumaMesa);
                 System.out.println("Cartas disponibles en el mazo: " + modelo.mostrarCartasDisponibles());
                 System.out.println("Tu mano: " + manosJugadores.get(0));
-                System.out.print("Selecciona el índice de la carta que deseas jugar (0-" + (manosJugadores.get(0).size() - 1) + "): ");
 
-                try {
-                    int indiceCarta = Integer.parseInt(scanner.nextLine());
-                    turnoJugador(jugadorActual, indiceCarta);
-                } catch (NumberFormatException e) {
-                    System.out.println("Entrada inválida. Intenta de nuevo.");
-                }
+                // Crear y ejecutar el hilo para el jugador humano
+                executor.submit(() -> {
+                    turnoJugadorHumano();
+                    latch.countDown(); // Indica que el hilo ha terminado
+                });
             } else {
                 // Turno de la IA
                 System.out.println("\n===============================");
                 System.out.println("Turno del jugador " + (jugadorActual + 1));
                 System.out.println("===============================\n");
-                turnoIA(jugadorActual);
+
+                // Crear y ejecutar el hilo para el jugador IA
+                executor.submit(() -> {
+                    new JugadorIAThread(this, jugadorActual).run();
+                    latch.countDown(); // Indica que el hilo ha terminado
+                });
             }
-            turno++;
+
+            // Esperar a que ambos hilos terminen antes de continuar con el siguiente turno
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            turno++; // Pasar al siguiente turno
         }
+
+        // Apagar el executor después de que termine el juego
+        executor.shutdown();
     }
 
     public int pedirValorAs() {
