@@ -108,7 +108,7 @@ public class CZController {
         // Fin del juego, solo queda un jugador
         System.out.println("¡El jugador " + (jugadorActual + 1) + " es el ganador!");
         modelo.WinAlert();
-        System.exit(0); // Finalizar el juego
+        System.exit(0); // Finalizar el juego.
     }
 
     public int pedirValorAs() {

@@ -15,7 +15,7 @@ public class Main extends Application {
      */
     public static void main(String[] args) {
         CZController controller = new CZController();
-        controller.iniciarJuegoConsola(); // Inicia el juego en la consola
+        controller.iniciarJuegoConsola(); // Inicia el juego en la consola.
     }
 
     /**
