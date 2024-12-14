@@ -168,7 +168,8 @@ public class CZController {
             // Eliminar al jugador de la lista de manos
             manosJugadores.remove(jugador);
 
-            verificarFinDelJuego(); // Verificar si el juego ha terminado
+            // Verificar si el juego terminó
+            verificarFinDelJuego();
             return; // Finalizar turno si el jugador es eliminado
         }
 
@@ -194,12 +195,18 @@ public class CZController {
         System.out.println("Jugador " + (jugador + 1) + " jugó: " + cartaJugada);
         System.out.println("Suma actual en la mesa: " + sumaMesa);
 
-        // Si es el jugador humano, preguntarle si quiere tomar carta
-        if (jugador == 0 && manosJugadores.get(jugador).size() == 3) {
-            preguntarSiTomarCarta(jugador);
+        // Siempre preguntar si tomar carta, independientemente de la cantidad de cartas en la mano
+        if (jugador == 0) {
+            preguntarSiTomarCarta(jugador); // Esta pregunta se hará siempre en cada turno del jugador humano
         }
         // Si es IA, tomará carta automáticamente si queda con 3
         else if (jugador != 0 && manosJugadores.get(jugador).size() == 3) {
+            System.out.println("Jugador " + (jugador + 1) + " (IA) está pensando si tomar una carta...");
+            try {
+                Thread.sleep((int) (2000 + Math.random() * 2000)); // 2 a 4 segundos de "pensar"
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             modelo.tomarCarta(jugador);
         }
 
@@ -217,8 +224,11 @@ public class CZController {
         }
 
         mostrarManos();
+
+        // Verificar si el juego ha terminado
         verificarFinDelJuego();
     }
+
 
     private void preguntarSiTomarCarta(int jugador) {
         Scanner scanner = new Scanner(System.in);
@@ -250,6 +260,18 @@ public class CZController {
         }
 
         List<CZ.Carta> mano = manosJugadores.get(jugador);
+
+        // Mostrar mensaje de que la IA está pensando
+        System.out.println("Jugador " + (jugador + 1) + " (IA) está pensando...");
+
+        // Simular tiempo de reflexión de la IA (2 a 4 segundos)
+        try {
+            Thread.sleep((int) (2000 + Math.random() * 2000));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Verificar si la IA puede jugar alguna carta
         for (int i = 0; i < mano.size(); i++) {
             CZ.Carta carta = mano.get(i);
             if (modelo.puedeJugarCarta(carta, sumaMesa)) {
@@ -257,18 +279,16 @@ public class CZController {
                     int puntosAs = seleccionarValorAsIA(sumaMesa, mano.size());
                     mano.set(i, new CZ.Carta(carta.getPalo(), carta.getValor(), puntosAs));
                 }
-
-                // Simular tiempo de decisión de la IA (2 a 4 segundos)
-                try {
-                    Thread.sleep((int) (2000 + Math.random() * 2000));
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-
                 turnoJugador(jugador, i);
                 return;
             }
         }
+
+        // Si no puede jugar ninguna carta, eliminar al jugador
+        System.out.println("Jugador " + (jugador + 1) + " (IA) no tiene movimientos válidos. Eliminado.");
+        modelo.DevolverCartasAlMazo(mano); // Devolver cartas al mazo
+        manosJugadores.remove(jugador);
+        verificarFinDelJuego();
     }
 
     private int seleccionarValorAsIA(int sumaActual, int cantidadCartasMano) {

@@ -136,14 +136,14 @@ public class CZ implements ICZ {
     @Override
     public boolean puedeJugarCarta(Carta carta, int sumaActual) {
         if ("A".equals(carta.getValor())) {
-            return sumaActual + 1 <= 50 || sumaActual + 11 <= 50;
+            return sumaActual + 1 <= 50 || sumaActual + 10 <= 50;
         }
         return sumaActual + carta.getPuntos() <= 50;
     }
 
     @Override
     public int calcularPuntosCarta(Carta carta, int sumaActual) {
-        return "A".equals(carta.getValor()) ? (sumaActual + 11 <= 50 ? 11 : 1) : carta.getPuntos();
+        return "A".equals(carta.getValor()) ? (sumaActual + 10 <= 50 ? 10 : 1) : carta.getPuntos();
     }
 
     @Override
