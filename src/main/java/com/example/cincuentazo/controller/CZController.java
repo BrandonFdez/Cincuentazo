@@ -10,22 +10,34 @@ import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Controller class for managing the game logic in the CZ (Cincuentazo) game.
+ * It handles the interaction between the model (game state) and the user interface.
+ */
 public class CZController {
 
-    private CZ modelo;
-    private List<List<CZ.Carta>> manosJugadores;
-    private List<CZ.Carta> cartasEnMesa;
-    private int sumaMesa;
-    private int cantidadJugadores;
-    private int jugadorActual;
+    private CZ modelo;  // The game model
+    private List<List<CZ.Carta>> manosJugadores;  // List of hands for each player
+    private List<CZ.Carta> cartasEnMesa;  // List of cards on the table
+    private int sumaMesa;  // Total points of the cards on the table
+    private int cantidadJugadores;  // Number of players
+    private int jugadorActual;  // Current player
 
+    /**
+     * Constructor for the CZController class.
+     * Initializes the model and the list of cards on the table.
+     */
     public CZController() {
-        this.modelo = new CZ();
-        this.cartasEnMesa = new ArrayList<>();
+        this.modelo = new CZ();  // Instantiate the game model
+        this.cartasEnMesa = new ArrayList<>();  // Initialize the list of cards on the table
     }
 
+    /**
+     * Displays the current hands of all players.
+     * It shows the human player's hand fully, while hiding the hands of AI players.
+     */
     private void mostrarManos() {
-        System.out.println("\nManos actuales de los jugadores:");
+        System.out.println("\nManos actuales de los jugadores:");  // Display current hands of players
         for (int i = 0; i < manosJugadores.size(); i++) {
             if (manosJugadores.get(i) != null && !manosJugadores.get(i).isEmpty()) {
                 // Mostrar la mano del jugador humano (jugador 1)
@@ -45,23 +57,47 @@ public class CZController {
         }
     }
 
+    /**
+     * Starts the game in console mode. It includes:
+     * - Asking the player if they want to view the game instructions.
+     * - Initializing the game state, such as the number of players, card distribution, and the first card.
+     * - Displaying the game state including available cards and player hands.
+     *
+     * @throws MazoVacioException If the deck is empty during the game.
+     */
     public void iniciarJuegoConsola() throws MazoVacioException {
-        solicitarCantidadJugadores();
-        modelo.repartirCartas(cantidadJugadores);
-        manosJugadores = modelo.getManosJugadores();
+        // Preguntar si desea ver las instrucciones
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("¿Quieres ver las instrucciones del juego? (Sí/No): ");
+        String respuesta = scanner.nextLine().trim().toLowerCase();  // Get player's response
 
+        // Muestra las instrucciones si el jugador responde "sí"
+        if (respuesta.equals("sí") || respuesta.equals("si")) {
+            modelo.ShowInstructions();  // Display instructions
+        }
+
+        solicitarCantidadJugadores();  // Ask for the number of players
+        modelo.repartirCartas(cantidadJugadores);  // Distribute cards to players
+        manosJugadores = modelo.getManosJugadores();  // Retrieve the players' hands
+
+        // Take the first card from the deck and add it to the table
         CZ.Carta cartaInicial = modelo.tomarCartaDelMazo();
         cartasEnMesa.add(cartaInicial);
-        sumaMesa = cartaInicial.getPuntos();
+        sumaMesa = cartaInicial.getPuntos();  // Update the table's total points with the initial card
 
         System.out.println("Juego iniciado con " + cantidadJugadores + " jugadores.");
         System.out.println("Carta inicial en la mesa: " + cartaInicial);
         System.out.println("Cartas disponibles en el mazo: " + modelo.mostrarCartasDisponibles());
-        mostrarManos();
+        mostrarManos();  // Show the current hands of all players
 
-        jugar();
+        jugar();  // Start the game loop
     }
 
+    /**
+     * Requests and validates the number of players for the game.
+     * The valid range of players is between 2 and 4.
+     * If the input is invalid, the default number of players is set to 2.
+     */
     private void solicitarCantidadJugadores() {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Ingresa la cantidad de jugadores (2-4): ");
@@ -77,6 +113,14 @@ public class CZController {
         }
     }
 
+    /**
+     * Starts and runs the game loop.
+     * The game continues as long as there are more than one player.
+     * The method alternates between the human player and AI players.
+     * When only one player remains, the game ends and the winner is announced.
+     *
+     * @throws MazoVacioException If the deck is empty during the game.
+     */
     public void jugar() throws MazoVacioException {
         Scanner scanner = new Scanner(System.in);
         int turno = 0;
@@ -114,6 +158,13 @@ public class CZController {
         System.exit(0); // Finalizar el juego.
     }
 
+    /**
+     * Asks the player to choose the value of an Ace card, either 1 or 10 points.
+     * It ensures the input is valid by accepting only 1 or 10.
+     *
+     * @return The value chosen for the Ace card (1 or 10).
+     * @throws IndiceCartaInvalidoException If the input is invalid (not 1 or 10).
+     */
     public int pedirValorAs() throws IndiceCartaInvalidoException {
         Scanner scanner = new Scanner(System.in);
         int valorAs;
@@ -133,7 +184,13 @@ public class CZController {
         }
     }
 
-
+    /**
+     * Checks if the specified player has any valid moves available.
+     * A valid move is when the player has a card that can be played based on the current sum on the table.
+     *
+     * @param jugador The index of the player to check.
+     * @return true if the player has valid moves; false otherwise.
+     */
     private boolean tieneMovimientosValidos(int jugador) {
         for (CZ.Carta carta : manosJugadores.get(jugador)) {
             if (modelo.puedeJugarCarta(carta, sumaMesa)) {
@@ -143,6 +200,14 @@ public class CZController {
         return false;
     }
 
+    /**
+     * Verifies the end conditions of the game.
+     * If only one player remains, it declares the winner.
+     * It also checks if the deck is empty and attempts to recycle the cards.
+     * If the deck is still empty, the game ends in a draw.
+     *
+     * @throws MazoVacioException If there are no cards left in the deck.
+     */
     private void verificarFinDelJuego() throws MazoVacioException {
         // Si solo queda un jugador, declarar ganador
         if (manosJugadores.size() == 1) {
@@ -163,6 +228,15 @@ public class CZController {
         }
     }
 
+    /**
+     * Executes the player's turn by playing a selected card.
+     * The method ensures that the selected card is valid, updates the game state,
+     * and checks for game-ending conditions after each turn.
+     *
+     * @param jugador The index of the player whose turn it is.
+     * @param indiceCarta The index of the card selected by the player to play.
+     * @throws MazoVacioException If there are no more cards in the deck.
+     */
     public void turnoJugador(int jugador, int indiceCarta) {
         try {
             // Verificar si el jugador tiene movimientos válidos antes de proceder
@@ -231,6 +305,12 @@ public class CZController {
         }
     }
 
+    /**
+     * Asks the human player if they want to take a card from the deck.
+     * If the player agrees, a new card is drawn from the deck and added to their hand.
+     *
+     * @param jugador The index of the player who is asked if they want to take a card.
+     */
     private void preguntarSiTomarCarta(int jugador) {
         Scanner scanner = new Scanner(System.in);
         System.out.print("¿Deseas tomar una carta del mazo? (Sí/No): ");
@@ -247,6 +327,14 @@ public class CZController {
         }
     }
 
+    /**
+     * Executes the turn of an AI player.
+     * The AI will think for 2 to 4 seconds, then attempt to play a valid card if possible.
+     * If no valid cards are available, the AI player is eliminated.
+     *
+     * @param jugador The index of the AI player whose turn it is.
+     * @throws MazoVacioException If there are no more cards in the deck.
+     */
     private void turnoIA(int jugador) throws MazoVacioException {
         if (jugador >= manosJugadores.size()) {
             return;
@@ -254,7 +342,7 @@ public class CZController {
 
         if (!tieneMovimientosValidos(jugador)) {
             System.out.println("Jugador " + (jugador + 1) + " no tiene movimientos válidos. Eliminado.");
-            modelo.DevolverCartasAlMazo(manosJugadores.get(jugador)); // Devolver cartas al mazo
+            modelo.DevolverCartasAlMazo(manosJugadores.get(jugador)); // Return cards to the deck
             manosJugadores.remove(jugador);
             verificarFinDelJuego();
             return;
@@ -262,17 +350,17 @@ public class CZController {
 
         List<CZ.Carta> mano = manosJugadores.get(jugador);
 
-        // Mostrar mensaje de que la IA está pensando
+        // Display message that the AI is thinking
         System.out.println("Jugador " + (jugador + 1) + " (IA) está pensando...");
 
-        // Simular tiempo de reflexión de la IA (2 a 4 segundos)
+        // Simulate the AI's thinking time (2 to 4 seconds)
         try {
             Thread.sleep((int) (2000 + Math.random() * 2000));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
-        // Verificar si la IA puede jugar alguna carta
+        // Check if the AI can play any card
         for (int i = 0; i < mano.size(); i++) {
             CZ.Carta carta = mano.get(i);
             if (modelo.puedeJugarCarta(carta, sumaMesa)) {
@@ -285,30 +373,38 @@ public class CZController {
             }
         }
 
-        // Si no puede jugar ninguna carta, eliminar al jugador
+        // If no valid card is available, eliminate the player
         System.out.println("Jugador " + (jugador + 1) + " (IA) no tiene movimientos válidos. Eliminado.");
-        modelo.DevolverCartasAlMazo(mano); // Devolver cartas al mazo
+        modelo.DevolverCartasAlMazo(mano); // Return cards to the deck
         manosJugadores.remove(jugador);
         verificarFinDelJuego();
     }
 
+    /**
+     * Determines the value of an Ace card for the AI player based on the current sum and the number of cards in their hand.
+     * The AI prefers to risk more when it has fewer cards.
+     *
+     * @param sumaActual The current sum of points on the table.
+     * @param cantidadCartasMano The number of cards the AI player has in their hand.
+     * @return The value the AI chooses for the Ace (1 or 10).
+     */
     private int seleccionarValorAsIA(int sumaActual, int cantidadCartasMano) {
-        // Si la IA tiene pocas cartas, puede arriesgar más, eligiendo 10 si no excede 50
+        // If the AI has more than 2 cards, it will be more cautious and avoid exceeding 50.
         if (cantidadCartasMano > 2) {
             if (sumaActual + 10 <= 50) {
-                return 10; // Seleccionar 10 si no se pasa de 50
+                return 10; // Choose 10 if it doesn't exceed 50
             } else {
-                return 1; // Si se va a pasar, elegir 1
+                return 1; // If it would exceed 50, choose 1
             }
         } else {
-            // Si la IA tiene pocas cartas, puede arriesgarse más.
-            // Elige 10 si es probable que gane o no se pase
+            // If the AI has fewer cards, it can afford to take more risks.
             if (sumaActual + 10 <= 50) {
-                return 10;
+                return 10; // Choose 10 if it doesn't exceed 50
             } else {
-                // Si tiene pocas cartas y la suma es alta, preferirá un 1
+                // If the AI has fewer cards and the sum is high, it will prefer 1
                 return 1;
             }
         }
     }
 }
+
