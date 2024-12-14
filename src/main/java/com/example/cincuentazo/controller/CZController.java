@@ -2,8 +2,11 @@ package com.example.cincuentazo.controller;
 
 import com.example.cincuentazo.model.CZ;
 import javafx.scene.control.Alert;
-
+import com.example.cincuentazo.exception.MazoVacioException;
+import com.example.cincuentazo.exception.IndiceCartaInvalidoException;
+import com.example.cincuentazo.exception.ManoVaciaException;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -42,7 +45,7 @@ public class CZController {
         }
     }
 
-    public void iniciarJuegoConsola() {
+    public void iniciarJuegoConsola() throws MazoVacioException {
         solicitarCantidadJugadores();
         modelo.repartirCartas(cantidadJugadores);
         manosJugadores = modelo.getManosJugadores();
@@ -74,7 +77,7 @@ public class CZController {
         }
     }
 
-    public void jugar() {
+    public void jugar() throws MazoVacioException {
         Scanner scanner = new Scanner(System.in);
         int turno = 0;
 
@@ -111,19 +114,25 @@ public class CZController {
         System.exit(0); // Finalizar el juego.
     }
 
-    public int pedirValorAs() {
+    public int pedirValorAs() throws IndiceCartaInvalidoException {
         Scanner scanner = new Scanner(System.in);
         int valorAs;
-        System.out.print("El As vale 1 o 10 puntos? Elige (1/10): ");
 
-        valorAs = scanner.nextInt();
-        while (valorAs != 1 && valorAs != 10) {
-            System.out.print("Opción inválida. Elige 1 o 10: ");
+        try {
+            System.out.print("El As vale 1 o 10 puntos? Elige (1/10): ");
             valorAs = scanner.nextInt();
-        }
 
-        return valorAs;
+            while (valorAs != 1 && valorAs != 10) {
+                System.out.print("Opción inválida. Elige 1 o 10: ");
+                valorAs = scanner.nextInt();
+            }
+            return valorAs;
+
+        } catch (InputMismatchException e) {
+            throw new IndiceCartaInvalidoException("Valor ingresado inválido. Solo puedes elegir 1 o 10.");
+        }
     }
+
 
     private boolean tieneMovimientosValidos(int jugador) {
         for (CZ.Carta carta : manosJugadores.get(jugador)) {
@@ -134,7 +143,7 @@ public class CZController {
         return false;
     }
 
-    private void verificarFinDelJuego() {
+    private void verificarFinDelJuego() throws MazoVacioException {
         // Si solo queda un jugador, declarar ganador
         if (manosJugadores.size() == 1) {
             System.out.println("¡El jugador " + (jugadorActual + 1) + " es el ganador!");
@@ -149,86 +158,78 @@ public class CZController {
             cartasEnMesa.clear();
 
             if (modelo.mostrarCartasDisponibles() == 0) {
-                System.out.println("No hay más cartas para jugar. ¡Empate!");
-                modelo.mostrarAlerta("Juego Finalizado", "No hay más cartas para jugar. ¡Empate!", Alert.AlertType.INFORMATION);
-                System.exit(0);
+                throw new MazoVacioException("No hay más cartas en el mazo. ¡Juego terminado en empate!");
             }
         }
     }
 
     public void turnoJugador(int jugador, int indiceCarta) {
-        // Verificar si el jugador tiene movimientos válidos antes de proceder
-        if (!tieneMovimientosValidos(jugador)) {
-            System.out.println("Jugador " + (jugador + 1) + " no tiene movimientos válidos. Eliminado.");
-            modelo.DefeatAlert();
-
-            // Agregar las cartas del jugador eliminado a la baraja
-            modelo.reciclarCartas(manosJugadores.get(jugador));
-
-            // Eliminar al jugador de la lista de manos
-            manosJugadores.remove(jugador);
-
-            // Verificar si el juego terminó
-            verificarFinDelJuego();
-            return; // Finalizar turno si el jugador es eliminado
-        }
-
-        // Validar el índice de la carta seleccionada
-        if (jugador >= manosJugadores.size() || indiceCarta >= manosJugadores.get(jugador).size()) {
-            modelo.ErrorAlert();
-            return;
-        }
-
-        CZ.Carta cartaJugada = manosJugadores.get(jugador).get(indiceCarta);
-
-        // Si la carta es un As, pedir el valor al jugador humano o decidirlo automáticamente
-        if ("A".equals(cartaJugada.getValor())) {
-            int valorAs = (jugador == 0) ? pedirValorAs() : seleccionarValorAsIA(sumaMesa, manosJugadores.get(jugador).size());
-            cartaJugada = new CZ.Carta(cartaJugada.getPalo(), "A", valorAs);
-        }
-
-        // Jugar la carta y actualizar la suma de la mesa
-        manosJugadores.get(jugador).remove(indiceCarta);
-        cartasEnMesa.add(cartaJugada);
-        sumaMesa += modelo.calcularPuntosCarta(cartaJugada, sumaMesa);
-
-        System.out.println("Jugador " + (jugador + 1) + " jugó: " + cartaJugada);
-        System.out.println("Suma actual en la mesa: " + sumaMesa);
-
-        // Siempre preguntar si tomar carta, independientemente de la cantidad de cartas en la mano
-        if (jugador == 0) {
-            preguntarSiTomarCarta(jugador); // Esta pregunta se hará siempre en cada turno del jugador humano
-        }
-        // Si es IA, tomará carta automáticamente si queda con 3
-        else if (jugador != 0 && manosJugadores.get(jugador).size() == 3) {
-            System.out.println("Jugador " + (jugador + 1) + " (IA) está pensando si tomar una carta...");
-            try {
-                Thread.sleep((int) (2000 + Math.random() * 2000)); // 2 a 4 segundos de "pensar"
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        try {
+            // Verificar si el jugador tiene movimientos válidos antes de proceder
+            if (!tieneMovimientosValidos(jugador)) {
+                throw new ManoVaciaException("El jugador no tiene movimientos válidos y ha sido eliminado.");
             }
-            modelo.tomarCarta(jugador);
-        }
 
-        // Verificar si el jugador pierde tras jugar
-        if (sumaMesa > 50) {
-            System.out.println("Jugador " + (jugador + 1) + " perdió. Suma excedió 50.");
-            modelo.DefeatAlert();
+            // Validar el índice de la carta seleccionada
+            if (indiceCarta < 0 || indiceCarta >= manosJugadores.get(jugador).size()) {
+                throw new IndiceCartaInvalidoException("El índice de la carta seleccionada no es válido.");
+            }
 
-            // Agregar las cartas restantes a la baraja
-            modelo.reciclarCartas(manosJugadores.get(jugador));
+            // Obtener la carta jugada
+            CZ.Carta cartaJugada = manosJugadores.get(jugador).get(indiceCarta);
 
-            manosJugadores.remove(jugador);
+            // Si la carta es un As, pedir el valor al jugador humano o decidirlo automáticamente
+            if ("A".equals(cartaJugada.getValor())) {
+                int valorAs = (jugador == 0) ? pedirValorAs() : seleccionarValorAsIA(sumaMesa, manosJugadores.get(jugador).size());
+                cartaJugada = new CZ.Carta(cartaJugada.getPalo(), "A", valorAs);
+            }
+
+            // Actualizar la mesa y remover la carta jugada
+            manosJugadores.get(jugador).remove(indiceCarta);
+            cartasEnMesa.add(cartaJugada);
+            sumaMesa += modelo.calcularPuntosCarta(cartaJugada, sumaMesa);
+
+            System.out.println("Jugador " + (jugador + 1) + " jugó: " + cartaJugada);
+            System.out.println("Suma actual en la mesa: " + sumaMesa);
+
+            // Verificar si el jugador pierde
+            if (sumaMesa > 50) {
+                System.out.println("Jugador " + (jugador + 1) + " perdió. Suma excedió 50.");
+                modelo.DefeatAlert();
+
+                // Reciclar cartas y eliminar al jugador
+                modelo.reciclarCartas(manosJugadores.get(jugador));
+                manosJugadores.remove(jugador);
+                verificarFinDelJuego();
+                return;
+            }
+
+            // Verificar si el jugador humano debe tomar carta
+            if (jugador == 0) {
+                preguntarSiTomarCarta(jugador);
+            } else if (manosJugadores.get(jugador).size() == 3) { // IA decide tomar carta automáticamente
+                System.out.println("Jugador " + (jugador + 1) + " (IA) está pensando si tomar una carta...");
+                Thread.sleep((int) (2000 + Math.random() * 2000));
+                modelo.tomarCarta(jugador);
+            }
+
+            // Mostrar las manos restantes
+            mostrarManos();
             verificarFinDelJuego();
-            return;
+
+        } catch (ManoVaciaException | IndiceCartaInvalidoException e) {
+            System.out.println("Error: " + e.getMessage());
+            modelo.mostrarAlerta("Error", e.getMessage(), Alert.AlertType.ERROR);
+
+        } catch (MazoVacioException e) {
+            System.out.println("El mazo está vacío: " + e.getMessage());
+            modelo.mostrarAlerta("Juego Terminado", e.getMessage(), Alert.AlertType.INFORMATION);
+            System.exit(0);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
-
-        mostrarManos();
-
-        // Verificar si el juego ha terminado
-        verificarFinDelJuego();
     }
-
 
     private void preguntarSiTomarCarta(int jugador) {
         Scanner scanner = new Scanner(System.in);
@@ -246,7 +247,7 @@ public class CZController {
         }
     }
 
-    private void turnoIA(int jugador) {
+    private void turnoIA(int jugador) throws MazoVacioException {
         if (jugador >= manosJugadores.size()) {
             return;
         }

@@ -1,6 +1,7 @@
 package com.example.cincuentazo;
 
 import com.example.cincuentazo.controller.CZController;
+import com.example.cincuentazo.exception.MazoVacioException;
 import com.example.cincuentazo.view.CZFirstStage;
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -13,7 +14,7 @@ public class Main extends Application {
      *
      * @param args Command-line arguments passed to the application.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws MazoVacioException {
         CZController controller = new CZController();
         controller.iniciarJuegoConsola(); // Inicia el juego en la consola.
     }
