@@ -1,0 +1,6 @@
+module:com.example.cincuentazo
+com.example.cincuentazo
+com.example.cincuentazo.controller
+com.example.cincuentazo.exception
+com.example.cincuentazo.model
+com.example.cincuentazo.view

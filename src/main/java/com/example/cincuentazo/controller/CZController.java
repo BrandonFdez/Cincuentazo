@@ -114,7 +114,7 @@ public class CZController {
 
     /**
      * Verifica si el jugador tiene movimientos válidos en su mano.
-     * @param jugador Índice del jugador en la lista de manos.
+     * @param jugador indice del jugador en la lista de manos.
      * @return true si el jugador puede jugar al menos una carta válida; false en caso contrario.
      */
     private boolean tieneMovimientosValidos(int jugador) {
